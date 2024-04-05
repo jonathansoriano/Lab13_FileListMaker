@@ -2,53 +2,97 @@ import javax.swing.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 
-public class Test_FileListMaker {
+public class Test_FileListMaker { // Testing Java Class.
     private static ArrayList<String> randomList = new ArrayList<>(); // Global ArrayList so I can insert method in private static methods outside the main method.
 
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        boolean needsToBeSaved = false;
+        boolean saved = true;
         boolean doneResponse = false;
+        boolean saveYN = false;
         String menuPrompt = "Select from Menu [A - Add  D - Delete  V - View  Q - Quit  O - Open  S - Save  C - Clear]";
         String userChoice = "";
+        String fileName = "";
         int deleteInput = 0;
 
         try {
             while (!doneResponse){
                 userChoice = SafeInput.getRegExString(in, menuPrompt, "[AaDdVvQqOoSsCc]");
 
-                if (userChoice.equalsIgnoreCase("a")) {
+                if (userChoice.equalsIgnoreCase("a")) { // ADD OPTION
                     addItem(in, "What item would you like to add to the list?");
-                    needsToBeSaved = true;
+                    saved = false;
                 }
-                if (userChoice.equalsIgnoreCase("d")) {
-                    numItemList();
-                    deleteInput = SafeInput.getRangedInt(in, "What item from the list would you like to delete", 1, randomList.size()); // "high" is Arraylist.size since we don't know how many items will be in list.
-                    deleteItem(deleteInput);
-                    // Figure out how to overwrite already existing txt file for ArrayList
-                    needsToBeSaved = true;
+                if (userChoice.equalsIgnoreCase("d")) { // DELETE OPTION
+                    if (randomList.isEmpty()){
+                        System.out.println("You must have items to be able to delete them!");
+                    }else {
+                        numItemList();
+                        deleteInput = SafeInput.getRangedInt(in, "What item from the list would you like to delete", 1, randomList.size()); // "high" is Arraylist.size since we don't know how many items will be in list.
+                        deleteItem(deleteInput);
+                        // Figure out how to overwrite already existing txt file for ArrayList
+                        saved = false;
+                    }
+
                 }
-                if (userChoice.equalsIgnoreCase("v")){
+                if (userChoice.equalsIgnoreCase("v")){ // VIEW OPTION
                     displayArrayList();
                 }
-                if (userChoice.equalsIgnoreCase("q")){
-                    doneResponse= SafeInput.getYNConfirm(in, "Are you sure you want to Quit?");
+                if (userChoice.equalsIgnoreCase("q")){ // QUIT OPTION
+                    if (!saved){
+                        System.out.println("If you Quit, you will lose your current data.");
+                        saveYN = SafeInput.getYNConfirm(in, "Do you want want to save before Quiting?");
+                        if (saveYN){
+                            fileName = SafeInput.getNonZeroLenString(in, "Please provide a name for your file");
+                            fileMaker(fileName);
+                            System.out.println("Your file has been saved!");
+                        }
+                        doneResponse = true;
+
+                    }else {
+                        doneResponse= SafeInput.getYNConfirm(in, "Are you sure you want to Quit?");
+                    }
+
                 }
-                if (userChoice.equalsIgnoreCase("o")){
+                if (userChoice.equalsIgnoreCase("o")){ //OPEN OPTION
                     // Double check and make sure this code works
+                    if (!saved){
+                        System.out.println("You're about to lose your current data.");
+                        saveYN = SafeInput.getYNConfirm(in, "Do you want want to save your current data?");
+                        if (saveYN){
+                            fileName = SafeInput.getNonZeroLenString(in, "Please provide a name for your file");
+                            fileMaker(fileName);
+                            openTextFile();
+                        }
+                        else {
+                            openTextFile();
+                        }
+                    }
+                    saved = true;
                     openTextFile();
                 }
-                if (userChoice.equalsIgnoreCase("s")){
-                    makeTextFile(randomList);
+                if (userChoice.equalsIgnoreCase("s")){ // SAVE OPTION
+                    if (randomList.isEmpty()){
+                        System.out.println("Please add items to be able to save.");
+
+                    }else {
+                        fileName = SafeInput.getNonZeroLenString(in, "Please provide a name for your file");
+                        fileMaker(fileName);
+                        saved = true;
+                    }
+
+
+
+                    // makeTextFile(randomList);
                 }
                 if (userChoice.equalsIgnoreCase("c")){
-                    System.out.println("STILL NEED TO CODE");
+                    randomList.clear();
+                    System.out.println("You have cleared the list.");
                 }
 
 
@@ -73,7 +117,7 @@ public class Test_FileListMaker {
     } // <------ end of Main Method
 
     // Private methods since these are one time use methods.
-    private static void displayArrayList (){ //Print Method
+    private static void displayArrayList (){ //View Method
         if (randomList.isEmpty()){ // isEmpty method checks if there are any elements or items in randomList.
             System.out.println("You haven't added to the list! Please add items to the list.");
         }else {
@@ -102,52 +146,54 @@ public class Test_FileListMaker {
         randomList.remove(adjValue); // adjValue is actual number used to remove from arraylist.
     }
 
-    private static void makeTextFile(ArrayList<String> myArrayList) throws IOException {
-        File workingDirectory = new File(System.getProperty("user.dir"));
-        Path file = Paths.get(workingDirectory.getPath() + "/src/list.txt");
-
-        OutputStream out = new BufferedOutputStream(Files.newOutputStream(file, CREATE));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
-
-        for (String item : myArrayList)
-        {
-            writer.write(item, 0, item.length());
-            writer.newLine();
-        }
-        writer.close();
-        System.out.println("File has been written.");
-
-    }
-
-    private static void openTextFile() throws IOException {
+    private static void openTextFile() throws IOException // Open Method
+    {
         JFileChooser chooser = new JFileChooser();
         File selectedFile;
-        String items = ""; // items in ArrayList
 
         File workDirectory = new File(System.getProperty("user.dir"));
 
         chooser.setCurrentDirectory(workDirectory);
 
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION){
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+        {
             selectedFile = chooser.getSelectedFile();
             Path file = selectedFile.toPath();
 
             InputStream in = new BufferedInputStream(Files.newInputStream(file,CREATE));
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
-            while (reader.ready()){
-                items = reader.readLine(); // This reads every line
 
-                System.out.println(items); // Format on how the lines will be printed out in terminal
+            String currentLine;
+            while ((currentLine = reader.readLine()) != null)
+            {
+                randomList.add(currentLine);
+
+                System.out.println(currentLine);
             }
             reader.close(); // Stops reader
-            System.out.println("\n\nData file read!");
+            System.out.println("\nYou have selected file: " + selectedFile.getName());
+            System.out.println("Data file read!");
         }
         else
         {
             System.out.println("No file selected! Run program again and select a file.");
         }
     }
+
+    private static void fileMaker(String filename) throws IOException { // Save Method
+
+        FileWriter myWriter = new FileWriter(filename + ".txt");
+
+        for (String line : randomList)
+        {
+            myWriter.write(line + "\n");
+
+        }
+        myWriter.close();
+        System.out.println("Successfully created and wrote to the file!");
+    }
+
 
 
 } // <----- end of Class
