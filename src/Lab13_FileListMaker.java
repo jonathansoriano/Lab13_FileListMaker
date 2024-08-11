@@ -92,8 +92,8 @@ public class Lab13_FileListMaker {
 
 
 
-            }
-        }
+            } //End of the while loop
+        } // End of the Try Block
         catch (FileNotFoundException e) // Error if file is not found. Specific IOException.
         {
             System.out.println("File not found!");
